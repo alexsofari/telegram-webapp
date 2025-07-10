@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Мои задачи</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    ul { list-style-type: none; padding: 0; }
+    li { margin: 10px 0; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>📋 Мои задачи</h2>
+  <ul id="task-list"></ul>
+  <button onclick="sendTasks()">✅ Отправить</button>
+
+  <script>
+    const uid = new URLSearchParams(window.location.search).get('uid');
+    let taskData = [];
+
+    fetch(`https://your-n8n-host/webhook/get-tasks?uid=${uid}`)
+      .then(res => res.json())
+      .then(data => {
+        taskData = data.tasks;
+        const list = document.getElementById('task-list');
+        data.tasks.forEach((task, i) => {
+          const li = document.createElement('li');
+          li.innerHTML = \`<input type="checkbox" id="task-\${i}" \${task.done ? 'checked' : ''}> \${task.text}\`;
+          list.appendChild(li);
+        });
+      });
+
+    function sendTasks() {
+      const result = taskData.map((task, i) => {
+        const checked = document.getElementById(\`task-\${i}\`).checked;
+        return { ...task, done: checked };
+      });
+
+      fetch('https://your-n8n-host/webhook/update-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, tasks: result })
+      }).then(() => alert('✅ Задачи обновлены'));
+    }
+  </script>
+</body>
+</html>
