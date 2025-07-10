@@ -20,7 +20,7 @@
     const uid = new URLSearchParams(window.location.search).get('uid');
     let taskData = [];
 
-    fetch(`https://your-n8n-host/webhook/get-tasks?uid=${uid}`)
+    fetch(`https://aikernel.ru/webhook/get-tasks?uid=${uid}`)
       .then(res => res.json())
       .then(data => {
         taskData = data.tasks;
@@ -38,7 +38,7 @@
         return { ...task, done: checked };
       });
 
-      fetch('https://your-n8n-host/webhook/update-tasks', {
+      fetch('https://aikernel.ru/webhook/update-tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid, tasks: result })
