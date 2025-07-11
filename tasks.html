@@ -4,20 +4,56 @@
   <meta charset="UTF-8">
   <title>Мои задачи</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; background-color: #f9f9f9; }
-    h2 { margin-bottom: 20px; }
-    ul { list-style-type: none; padding: 0; }
-    li { margin: 10px 0; font-size: 24px; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: clamp(20px, 4vw, 32px);
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      padding: 15px 0;
+      font-size: clamp(18px, 4vw, 28px);
+      display: flex;
+      align-items: center;
+    }
+
+    li:not(:last-child)::after {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 2px;
+      background-color: #ccc;
+      margin-top: 15px;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.8);
+      margin-right: 12px;
+    }
+
     button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
+      margin-top: 30px;
+      padding: 12px 24px;
+      font-size: clamp(16px, 3vw, 20px);
       background-color: #2ea44f;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      width: 100%;
     }
+
     button:hover {
       background-color: #22863a;
     }
@@ -39,7 +75,11 @@
         const list = document.getElementById('task-list');
         data[0].tasks.forEach((task, i) => {
           const li = document.createElement('li');
-          li.innerHTML = `<label><input type="checkbox" id="task-${i}" ${task.done ? 'checked' : ''}> ${task.text}</label>`;
+          li.innerHTML = `
+            <label>
+              <input type="checkbox" id="task-${i}" ${task.done ? 'checked' : ''}>
+              ${task.text}
+            </label>`;
           list.appendChild(li);
         });
       })
