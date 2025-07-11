@@ -1,13 +1,32 @@
+
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>Мои задачи</title>
   <style>
+    :root {
+      --bg-color: #f9f9f9;
+      --text-color: #222;
+      --divider-color: #ccc;
+      --button-bg: #2ea44f;
+      --button-hover: #22863a;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --divider-color: #444;
+      --button-bg: #444;
+      --button-hover: #666;
+    }
+
     body {
       font-family: sans-serif;
       padding: 20px;
-      background-color: #f9f9f9;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
     }
 
     h2 {
@@ -26,15 +45,17 @@
       font-size: clamp(18px, 4vw, 28px);
       display: flex;
       align-items: center;
+      flex-direction: column;
     }
 
-    li:not(:last-child)::after {
-      content: "";
-      display: block;
+    li:not(:last-child) {
+      border-bottom: 2px solid var(--divider-color);
+    }
+
+    label {
+      display: flex;
+      align-items: center;
       width: 100%;
-      height: 2px;
-      background-color: #ccc;
-      margin-top: 15px;
     }
 
     input[type="checkbox"] {
@@ -42,11 +63,33 @@
       margin-right: 12px;
     }
 
-    button {
+    .filter-buttons, .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .filter-buttons button, .theme-toggle {
+      padding: 6px 12px;
+      font-size: clamp(14px, 2vw, 16px);
+      margin-right: 8px;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--button-bg);
+      color: white;
+      cursor: pointer;
+    }
+
+    .filter-buttons button:hover, .theme-toggle:hover {
+      background-color: var(--button-hover);
+    }
+
+    button.send {
       margin-top: 30px;
       padding: 12px 24px;
       font-size: clamp(16px, 3vw, 20px);
-      background-color: #2ea44f;
+      background-color: var(--button-bg);
       color: white;
       border: none;
       border-radius: 5px;
@@ -54,43 +97,79 @@
       width: 100%;
     }
 
-    button:hover {
-      background-color: #22863a;
+    button.send:hover {
+      background-color: var(--button-hover);
+    }
+
+    .top-bar {
+      justify-content: flex-end;
     }
   </style>
 </head>
 <body>
+  <div class="top-bar">
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Тема</button>
+  </div>
+
   <h2>📋 Мои задачи</h2>
+
+  <div class="filter-buttons">
+    <button onclick="applyFilter('all')">Все</button>
+    <button onclick="applyFilter('active')">Невыполненные</button>
+    <button onclick="applyFilter('done')">Выполненные</button>
+  </div>
+
   <ul id="task-list"></ul>
-  <button onclick="sendTasks()">✅ Отправить</button>
+  <button class="send" onclick="sendTasks()">✅ Отправить</button>
 
   <script>
     const uid = new URLSearchParams(window.location.search).get('uid');
     let taskData = [];
+    let currentFilter = 'all';
 
-    fetch(`https://aikernel.ru/webhook/get-tasks?uid=${uid}`)
-      .then(res => res.json())
-      .then(data => {
-        taskData = data[0].tasks;
-        const list = document.getElementById('task-list');
-        data[0].tasks.forEach((task, i) => {
-          const li = document.createElement('li');
-          li.innerHTML = `
-            <label>
-              <input type="checkbox" id="task-${i}" ${task.done ? 'checked' : ''}>
-              ${task.text}
-            </label>`;
-          list.appendChild(li);
-        });
-      })
-      .catch(err => {
-        document.body.innerHTML = `<p style="color:red;">Ошибка загрузки задач: ${err.message}</p>`;
+    function renderTasks() {
+      const list = document.getElementById('task-list');
+      list.innerHTML = '';
+      taskData.forEach((task, i) => {
+        const shouldShow =
+          currentFilter === 'all' ||
+          (currentFilter === 'done' && task.done) ||
+          (currentFilter === 'active' && !task.done);
+        if (!shouldShow) return;
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <label>
+            <input type="checkbox" id="task-${i}" ${task.done ? 'checked' : ''}>
+            ${task.text}
+          </label>
+        `;
+        list.appendChild(li);
       });
+    }
+
+    function applyFilter(filter) {
+      currentFilter = filter;
+      renderTasks();
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    }
+
+    function loadTheme() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') {
+        document.body.classList.add('dark');
+      }
+    }
 
     function sendTasks() {
       const result = taskData.map((task, i) => {
-        const checked = document.getElementById(`task-${i}`).checked;
-        return { ...task, done: checked };
+        const el = document.getElementById(`task-${i}`);
+        if (el) task.done = el.checked;
+        return task;
       });
 
       fetch('https://aikernel.ru/webhook/update-tasks', {
@@ -101,6 +180,18 @@
       .then(() => alert('✅ Задачи обновлены'))
       .catch(() => alert('❌ Ошибка при обновлении задач'));
     }
+
+    loadTheme();
+
+    fetch(`https://aikernel.ru/webhook/get-tasks?uid=${uid}`)
+      .then(res => res.json())
+      .then(data => {
+        taskData = data[0].tasks;
+        renderTasks();
+      })
+      .catch(err => {
+        document.body.innerHTML = `<p style="color:red;">Ошибка загрузки задач: ${err.message}</p>`;
+      });
   </script>
 </body>
 </html>
